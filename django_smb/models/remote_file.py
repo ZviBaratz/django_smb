@@ -33,6 +33,9 @@ class RemoteFile(models.Model):
         temp_file.seek(0)
         return temp_file
 
+    def get_path_parts(self):
+        return self.path.split('/')[1:]
+
     @property
     def dir_name(self):
         return os.path.dirname(self.path)

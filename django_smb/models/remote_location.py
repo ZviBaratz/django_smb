@@ -49,7 +49,7 @@ class RemoteLocation(models.Model):
         except OSError:
             return False
 
-    def list_files(self, location: str):
+    def list_files(self, location: str) -> list:
         connection = self.connect()
         files = connection.listPath(self.share_name, location)
         connection.close()
@@ -62,7 +62,7 @@ class RemoteLocation(models.Model):
                 result += [full_path]
         return result
 
-    def list_all_files(self):
+    def list_all_files(self) -> list:
         return self.list_files('.')
 
     def sync(self):
@@ -77,6 +77,23 @@ class RemoteLocation(models.Model):
                 new_file.save()
         self.last_sync = datetime.now()
         self.save()
+
+    def to_dict(self):
+        def recurse_setdefault(res, array):
+            if len(array) == 0:
+                return
+            elif len(array) == 1:
+                res.append(array[0])
+            else:
+                recurse_setdefault(
+                    res.setdefault(array[0], [] if len(array) == 2 else {}),
+                    array[1:],
+                )
+
+        tree = {}
+        for remote_file in self.file_set.all():
+            recurse_setdefault(tree, remote_file.path.split('/')[1:])
+        return tree
 
     @property
     def is_connected(self):
