@@ -2,7 +2,7 @@ import os
 import socket
 
 from datetime import datetime
-from django.db import models
+from django.db import models, transaction
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
 from smb.SMBConnection import SMBConnection
@@ -77,24 +77,27 @@ class RemoteLocation(models.Model):
     def list_all_paths(self) -> list:
         return self.list_file_paths('.')
 
-    def sync_node(self, node: RemotePath):
-        current_files = self.list_files(node.relative_path)
-        for shared_file in current_files:
-            name = shared_file.filename
-            try:
-                file_node = node.children.get(name=name, parent=node)
-            except ObjectDoesNotExist:
-                file_node = RemotePath(name=name, parent=node)
-                file_node.save()
+    # def sync_node(self, node: RemotePath):
+    #     current_files = self.list_files(node.relative_path)
+    #     for shared_file in current_files:
+    #         name = shared_file.filename
+    #         try:
+    #             file_node = node.children.get(name=name, parent=node)
+    #         except ObjectDoesNotExist:
+    #             file_node = RemotePath(name=name, parent=node)
+    #             file_node.save()
 
-            if shared_file.isDirectory:
-                self.sync_node(file_node)
+    #         if shared_file.isDirectory:
+    #             self.sync_node(file_node)
 
     def sync(self):
         if not self.tree_root:
             self.tree_root = RemotePath(name='.')
             self.tree_root.save()
-        self.sync_node(self.tree_root)
+        with transaction.atomic():
+            with RemotePath.objects.disable_mptt_updates():
+                self.tree_root.sync()
+            RemotePath.objects.rebuild()
         self.last_sync = datetime.now()
         self.save()
 

@@ -1,6 +1,8 @@
 from django.urls import path
 from django_smb import views
 
+app_name = 'django_smb'
+
 urlpatterns = [
     path(
         'remote_locations/',
