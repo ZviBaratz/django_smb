@@ -17,4 +17,9 @@ urlpatterns = [
         views.sync_remote_location,
         name='smb_sync',
     ),
+    path(
+        'jsonify/<int:pk>/',
+        views.generate_json,
+        name='smb_jsonify',
+    )
 ]

@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import JsonResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView
@@ -14,6 +15,16 @@ def sync_remote_location(request, pk: int):
     smb = get_object_or_404(RemoteLocation, pk=pk)
     smb.sync()
     return redirect('smb_locations')
+
+
+def generate_json(request, pk: int):
+    smb = get_object_or_404(RemoteLocation, pk=pk)
+    data = list(smb.tree_root.get_descendants().values(
+        'id',
+        'parent_id',
+        'name',
+    ))
+    return JsonResponse({'data': data})
 
 
 class RemoteLocationListView(LoginRequiredMixin, ListView):
