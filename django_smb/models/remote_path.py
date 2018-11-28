@@ -3,6 +3,7 @@ import os
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.urls import reverse
 from mptt.models import MPTTModel, TreeForeignKey
 from smb.smb_structs import OperationFailure
 
@@ -34,9 +35,10 @@ class RemotePath(MPTTModel):
         order_insertion_by = ['name']
 
     def to_dict(self, lazy=True) -> dict:
-        d = {'id': self.id, 'text': self.name}
+        d = {'id': str(self.id), 'text': self.name}
         if self.name is '.':
             d['text'] = self.root_for.share_name
+            d['icon'] = 'fas fa-server'
         if self.children:
             if lazy:
                 d['children'] = True
@@ -76,6 +78,9 @@ class RemotePath(MPTTModel):
 
             if shared_file.isDirectory:
                 node.sync()
+
+    def get_absolute_url(self):
+        return reverse("locations")
 
     @property
     def relative_path(self):

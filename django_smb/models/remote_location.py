@@ -3,7 +3,6 @@ import socket
 
 from datetime import datetime
 from django.db import models, transaction
-from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
 from smb.SMBConnection import SMBConnection
 from django_smb.models import RemotePath
@@ -28,7 +27,7 @@ class RemoteLocation(models.Model):
         verbose_name_plural = "Locations"
 
     def get_absolute_url(self):
-        return reverse('smb_locations')
+        return reverse('locations')
 
     def get_server_ip(self) -> str:
         return socket.getaddrinfo(self.server_name, 139)[0][-1][0]

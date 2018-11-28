@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-# import re
+import re
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
@@ -13,10 +13,17 @@ from django_smb.forms import RemoteLocationForm
 from django_smb.models import RemoteLocation, RemotePath
 
 
+def get_root_dicts():
+    return [
+        location.tree_root.to_dict()
+        for location in RemoteLocation.objects.all()
+    ]
+
+
 def sync_remote_location(request, pk: int):
     smb = get_object_or_404(RemoteLocation, pk=pk)
     smb.sync()
-    return redirect('smb_locations')
+    return redirect('locations')
 
 
 def generate_json(request, pk: int):
@@ -25,11 +32,15 @@ def generate_json(request, pk: int):
     return JsonResponse(data)
 
 
-def generate_lazy_json(request, pk):
-    # pk = int(re.sub('\D', '', pk))
-    node = get_object_or_404(RemotePath, pk=pk)
-    data = node.to_dict()
-    return JsonResponse(data)
+def generate_lazy_json(request):
+    pk = request.get_full_path().split('=')[-1]
+    # '%23' is percent symbol for '#', which signifies a root node in jsTree
+    if pk == '%23':
+        data = get_root_dicts()
+    else:
+        node = get_object_or_404(RemotePath, pk=int(pk))
+        data = [child.to_dict() for child in node.children.all()]
+    return JsonResponse(data, safe=False)
 
 
 class RemoteLocationListView(LoginRequiredMixin, ListView):
@@ -40,4 +51,4 @@ class RemoteLocationListView(LoginRequiredMixin, ListView):
 class RemoteLocationCreateView(LoginRequiredMixin, CreateView):
     form_class = RemoteLocationForm
     template_name = 'django_smb/create_location.html'
-    success_url = reverse_lazy('smb_locations')
+    success_url = reverse_lazy('locations')

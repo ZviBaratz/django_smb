@@ -7,26 +7,26 @@ urlpatterns = [
     path(
         'remote_locations/',
         views.RemoteLocationListView.as_view(),
-        name='smb_locations',
+        name='locations',
     ),
     path(
         'create_remote_location/',
         views.RemoteLocationCreateView.as_view(),
-        name='smb_create',
+        name='create',
     ),
     path(
         'sync/<int:pk>/',
         views.sync_remote_location,
-        name='smb_sync',
+        name='sync',
     ),
     path(
-        'jsonify/lazy/<int:pk>/',
+        'jsonify/lazy/',
         views.generate_lazy_json,
         name='lazy_json',
     ),
     path(
         'jsonify/<int:pk>/',
         views.generate_json,
-        name='smb_jsonify',
+        name='jsonify',
     ),
 ]

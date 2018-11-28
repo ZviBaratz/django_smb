@@ -19,7 +19,7 @@ class RemoteFile(models.Model):
         verbose_name_plural = "SMB Files"
 
     def get_absolute_url(self):
-        return reverse('smb_files')
+        return reverse('locations')
 
     def get_file(self):
         connection = self.source.connect()
