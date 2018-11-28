@@ -33,6 +33,21 @@ class RemotePath(MPTTModel):
     class MPTTMeta:
         order_insertion_by = ['name']
 
+    def to_dict(self, lazy=True) -> dict:
+        d = {'id': self.id, 'text': self.name}
+        if self.name is '.':
+            d['text'] = self.root_for.share_name
+        if self.children:
+            if lazy:
+                d['children'] = True
+            else:
+                d['children'] = [
+                    child.to_dict() for child in self.children.all()
+                ]
+        if self.name.endswith('.dcm'):
+            d['icon'] = 'fab fa-magento'
+        return d
+
     def sync(self, log=True):
 
         if log:

@@ -20,8 +20,13 @@ urlpatterns = [
         name='smb_sync',
     ),
     path(
+        'jsonify/lazy/<int:pk>/',
+        views.generate_lazy_json,
+        name='lazy_json',
+    ),
+    path(
         'jsonify/<int:pk>/',
         views.generate_json,
         name='smb_jsonify',
-    )
+    ),
 ]
