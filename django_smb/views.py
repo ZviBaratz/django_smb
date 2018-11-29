@@ -34,6 +34,20 @@ def sync_ajax(request):
         return HttpResponse('Request method must be GET!')
 
 
+def import_ajax(request):
+    if request.method == 'GET':
+        request_path = request.get_full_path()
+        path_id = request_path.split('=')[-1]
+        node = RemotePath.objects.get(id=path_id)
+        if 'lazy' in request_path:
+            node.sync(lazy=True)
+        else:
+            node.sync()
+        return HttpResponse(f'Synced node {path_id}!')
+    else:
+        return HttpResponse('Request method must be GET!')
+
+
 def sync_remote_location(request, pk: int):
     smb = get_object_or_404(RemoteLocation, pk=pk)
     smb.sync()
