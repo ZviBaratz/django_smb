@@ -39,18 +39,20 @@ class RemotePath(MPTTModel):
         if self.name is '.':
             d['text'] = self.root_for.share_name
             d['icon'] = 'fas fa-server'
-        if self.children:
+        if self.children.exists():
             if lazy:
                 d['children'] = True
             else:
                 d['children'] = [
                     child.to_dict() for child in self.children.all()
                 ]
+        else:
+            d['children'] = False
         if self.name.endswith('.dcm'):
             d['icon'] = 'fab fa-magento'
         return d
 
-    def sync(self, log=True):
+    def sync(self, lazy=False, log=True):
 
         if log:
             logger.info(f'Fetching file descriptors for {self.name}...')
@@ -76,7 +78,7 @@ class RemotePath(MPTTModel):
                 if log:
                     logger.info('done!')
 
-            if shared_file.isDirectory:
+            if not lazy and shared_file.isDirectory:
                 node.sync()
 
     def get_absolute_url(self):
@@ -97,14 +99,14 @@ class RemotePath(MPTTModel):
 
     @property
     def is_available(self):
-        connection = self.source.connect()
+        connection = self.get_root().root_for.connect()
         try:
             dir_files = connection.listPath(
                 self.get_root().root_for.share_name,
                 self.dir_name,
             )
             connection.close()
-        except OperationFailure:
+        except (OperationFailure, AttributeError):
             return False
         file_names = [f.filename for f in dir_files]
         if self.name in file_names:

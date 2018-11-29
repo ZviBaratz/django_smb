@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import re
-
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.generic import ListView
@@ -20,6 +18,16 @@ def get_root_dicts():
     ]
 
 
+def sync_ajax(request):
+    if request.method == 'GET':
+        path_id = request.get_full_path().split('=')[-1]
+        node = RemotePath.objects.get(id=path_id)
+        node.sync(lazy=True)
+        return HttpResponse(f'Synced node {path_id}!')
+    else:
+        return HttpResponse('Request method must be GET!')
+
+
 def sync_remote_location(request, pk: int):
     smb = get_object_or_404(RemoteLocation, pk=pk)
     smb.sync()
@@ -32,14 +40,21 @@ def generate_json(request, pk: int):
     return JsonResponse(data)
 
 
+def parse_lazy_pk(request) -> int:
+    value = request.get_full_path().split('=')[-1]
+    try:
+        return int(value)
+    except ValueError:
+        return 0
+
+
 def generate_lazy_json(request):
-    pk = request.get_full_path().split('=')[-1]
-    # '%23' is percent symbol for '#', which signifies a root node in jsTree
-    if pk == '%23':
-        data = get_root_dicts()
-    else:
-        node = get_object_or_404(RemotePath, pk=int(pk))
+    pk = parse_lazy_pk(request)
+    if pk:
+        node = get_object_or_404(RemotePath, pk=pk)
         data = [child.to_dict() for child in node.children.all()]
+    else:
+        data = get_root_dicts()
     return JsonResponse(data, safe=False)
 
 

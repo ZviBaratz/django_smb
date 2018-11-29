@@ -15,6 +15,11 @@ urlpatterns = [
         name='create',
     ),
     path(
+        'sync/ajax/',
+        views.sync_ajax,
+        name='sync_ajax',
+    ),
+    path(
         'sync/<int:pk>/',
         views.sync_remote_location,
         name='sync',
