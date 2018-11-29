@@ -15,9 +15,14 @@ urlpatterns = [
         name='create',
     ),
     path(
+        'sync/ajax/lazy/',
+        views.sync_ajax,
+        name='ajax_sync_lazy',
+    ),
+    path(
         'sync/ajax/',
         views.sync_ajax,
-        name='sync_ajax',
+        name='ajax_sync',
     ),
     path(
         'sync/<int:pk>/',

@@ -1,5 +1,6 @@
 import logging
 import os
+import tempfile
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -30,9 +31,13 @@ class RemotePath(MPTTModel):
         blank=True,
         related_name='children',
     )
+    is_imported = models.BooleanField(default=False)
 
-    class MPTTMeta:
-        order_insertion_by = ['name']
+    # class MPTTMeta:
+    #     order_insertion_by = ['name']
+
+    def get_absolute_url(self):
+        return reverse('smb:locations')
 
     def to_dict(self, lazy=True) -> dict:
         d = {'id': str(self.id), 'text': self.name}
@@ -50,6 +55,14 @@ class RemotePath(MPTTModel):
             d['children'] = False
         if self.name.endswith('.dcm'):
             d['icon'] = 'fab fa-magento'
+            if self.is_available:
+                d['icon'] += ' available'
+            else:
+                d['icon'] += ' unavailable'
+            if self.is_imported:
+                d['icon'] += ' imported'
+            else:
+                d['icon'] += ' notimported'
         return d
 
     def sync(self, lazy=False, log=True):
@@ -67,22 +80,32 @@ class RemotePath(MPTTModel):
             try:
                 node = self.children.get(name=name)
                 if log:
-                    logger.info(f'existing node found! (ID: {node.id})')
+                    logger.info(f'Existing node found! (ID: {node.id})')
             except ObjectDoesNotExist:
                 if log:
-                    logger.info('NONE!')
                     logger.info(
-                        f'Creating new node for {name} under {self.name}...')
+                        f'None found! Creating new node for {name} under {self.name}...'
+                    )
                 node = RemotePath(name=name, parent=self)
                 node.save()
                 if log:
-                    logger.info('done!')
+                    logger.info(f'Successfully created node #{node.id}!')
 
             if not lazy and shared_file.isDirectory:
                 node.sync()
 
-    def get_absolute_url(self):
-        return reverse("locations")
+    def get_file(self):
+        location = self.get_root().root_for
+        connection = location.connect()
+        temp_file = tempfile.NamedTemporaryFile()
+        connection.retrieveFile(
+            location.share_name,
+            self.relative_path,
+            temp_file,
+        )
+        connection.close()
+        temp_file.seek(0)
+        return temp_file
 
     @property
     def relative_path(self):

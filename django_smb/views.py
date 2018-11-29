@@ -12,17 +12,23 @@ from django_smb.models import RemoteLocation, RemotePath
 
 
 def get_root_dicts():
-    return [
-        location.tree_root.to_dict()
-        for location in RemoteLocation.objects.all()
-    ]
+    root_dicts = []
+    for location in RemoteLocation.objects.all():
+        if location.tree_root is None:
+            location.create_tree_root()
+        root_dicts.append(location.tree_root.to_dict())
+    return root_dicts
 
 
 def sync_ajax(request):
     if request.method == 'GET':
-        path_id = request.get_full_path().split('=')[-1]
+        request_path = request.get_full_path()
+        path_id = request_path.split('=')[-1]
         node = RemotePath.objects.get(id=path_id)
-        node.sync(lazy=True)
+        if 'lazy' in request_path:
+            node.sync(lazy=True)
+        else:
+            node.sync()
         return HttpResponse(f'Synced node {path_id}!')
     else:
         return HttpResponse('Request method must be GET!')
@@ -66,4 +72,4 @@ class RemoteLocationListView(LoginRequiredMixin, ListView):
 class RemoteLocationCreateView(LoginRequiredMixin, CreateView):
     form_class = RemoteLocationForm
     template_name = 'django_smb/create_location.html'
-    success_url = reverse_lazy('locations')
+    success_url = reverse_lazy('smb:locations')
