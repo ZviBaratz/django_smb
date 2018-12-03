@@ -7,6 +7,11 @@ from django.urls import reverse
 from mptt.models import MPTTModel, TreeForeignKey
 from smb.smb_structs import OperationFailure
 
+ICON_DICT = {
+    '': 'fas fa-server',
+    'dcm': 'fab fa-magento',
+}
+
 
 class RemotePath(MPTTModel):
     name = models.CharField(max_length=100, blank=False, null=False)
@@ -23,25 +28,30 @@ class RemotePath(MPTTModel):
         return reverse('smb:locations')
 
     def to_dict(self, lazy=True) -> dict:
-        d = {'id': str(self.id), 'text': self.name}
+        d = {
+            'id': str(self.id),
+            'text': self.name,
+        }
         if self.name is '.':
             d['text'] = self.root_for.share_name
-            d['icon'] = 'fas fa-server'
-        if self.children.exists():
-            if lazy:
+
+        ext = self.name.split('.')[-1]
+        if ext not in ICON_DICT or not ext:
+            if lazy or not self.children.exists():
                 d['children'] = True
             else:
                 d['children'] = [
-                    child.to_dict() for child in self.children.all()
+                    child.to_dict(lazy=False) for child in self.children.all()
                 ]
         else:
             d['children'] = False
-        if self.name.endswith('.dcm'):
-            d['icon'] = 'fab fa-magento'
-            if self.is_available:
-                d['icon'] += ' available'
-            else:
-                d['icon'] += ' unavailable'
+
+        d['icon'] = ICON_DICT.get(ext, 'fas fa-folder')
+        # if self.is_available:
+        #     d['icon'] += ' available'
+        # else:
+        #     d['icon'] += ' unavailable'
+        if 'folder' not in d['icon'] and 'server' not in d['icon']:
             if self.is_imported:
                 d['icon'] += ' imported'
             else:
@@ -51,16 +61,19 @@ class RemotePath(MPTTModel):
     def sync(self, lazy=False):
         location = self.get_root().root_for
         current_files = location.list_files(self.relative_path)
-        for shared_file in current_files:
-            name = shared_file.filename
-            try:
-                node = self.children.get(name=name)
-            except ObjectDoesNotExist:
-                node = RemotePath(name=name, parent=self)
-                node.save()
+        if current_files is not None:
+            for shared_file in current_files:
+                name = shared_file.filename
+                try:
+                    node = self.children.get(name=name)
+                except ObjectDoesNotExist:
+                    node = RemotePath(name=name, parent=self)
+                    node.save()
+                if not lazy and shared_file.isDirectory:
 
-            if not lazy and shared_file.isDirectory:
-                node.sync()
+                    node.sync()
+            return True
+        return False
 
     def get_file(self):
         location = self.get_root().root_for

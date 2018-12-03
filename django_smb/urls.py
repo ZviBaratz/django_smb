@@ -31,12 +31,12 @@ urlpatterns = [
     ),
     path(
         'jsonify/lazy/',
-        views.generate_lazy_json,
+        views.generate_json,
         name='lazy_json',
     ),
     path(
-        'jsonify/<int:pk>/',
+        'jsonify/',
         views.generate_json,
-        name='jsonify',
+        name='json',
     ),
 ]

@@ -58,9 +58,10 @@ class RemoteLocation(models.Model):
 
     def list_files(self, path: str):
         connection = self.connect()
-        paths = connection.listPath(self.share_name, path)[2:]
-        connection.close()
-        return paths
+        if connection:
+            paths = connection.listPath(self.share_name, path)[2:]
+            connection.close()
+            return paths
 
     def list_file_paths(self, path: str) -> list:
         files = self.list_files(path)

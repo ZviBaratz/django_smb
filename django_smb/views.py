@@ -26,24 +26,12 @@ def sync_ajax(request):
         path_id = request_path.split('=')[-1]
         node = RemotePath.objects.get(id=path_id)
         if 'lazy' in request_path:
-            node.sync(lazy=True)
+            result = node.sync(lazy=True)
         else:
-            node.sync()
-        return HttpResponse(f'Synced node {path_id}!')
-    else:
-        return HttpResponse('Request method must be GET!')
-
-
-def import_ajax(request):
-    if request.method == 'GET':
-        request_path = request.get_full_path()
-        path_id = request_path.split('=')[-1]
-        node = RemotePath.objects.get(id=path_id)
-        if 'lazy' in request_path:
-            node.sync(lazy=True)
-        else:
-            node.sync()
-        return HttpResponse(f'Synced node {path_id}!')
+            result = node.sync()
+        if result:
+            return HttpResponse(node.id)
+        return HttpResponse('Failure')
     else:
         return HttpResponse('Request method must be GET!')
 
@@ -54,18 +42,31 @@ def sync_remote_location(request, pk: int):
     return redirect('locations')
 
 
-def generate_json(request, pk: int):
-    smb = get_object_or_404(RemoteLocation, pk=pk)
-    data = smb.tree_root.to_dict(lazy=False)
-    return JsonResponse(data)
-
-
-def parse_lazy_pk(request) -> int:
-    value = request.get_full_path().split('=')[-1]
-    try:
-        return int(value)
-    except ValueError:
-        return 0
+def generate_json(request):
+    if request.method == 'GET':
+        pk = parse_lazy_pk(request)
+        if pk:
+            node = get_object_or_404(RemotePath, pk=pk)
+            if 'lazy' in request.get_full_path():
+                print(f'Generating lazy json for {pk}...', end='\t')
+                data = [
+                    child.to_dict(lazy=True) for child in node.children.all()
+                ]
+                print('done!')
+            else:
+                print(f'Generating full json for {pk}...', end='\t')
+                data = node.to_dict(lazy=False)
+                print('done!')
+        else:
+            print('Generating root dictionaries...', end='\t')
+            data = get_root_dicts()
+            print('done!')
+        return JsonResponse(data, safe=False)
+    else:
+        return HttpResponse('Request method must be GET!')
+    # smb = get_object_or_404(RemoteLocation, pk=pk)
+    # data = smb.tree_root.to_dict(lazy=False)
+    # return JsonResponse(data)
 
 
 def generate_lazy_json(request):
@@ -76,6 +77,14 @@ def generate_lazy_json(request):
     else:
         data = get_root_dicts()
     return JsonResponse(data, safe=False)
+
+
+def parse_lazy_pk(request) -> int:
+    value = request.get_full_path().split('=')[-1]
+    try:
+        return int(value)
+    except ValueError:
+        return 0
 
 
 class RemoteLocationListView(LoginRequiredMixin, ListView):
