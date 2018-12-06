@@ -47,10 +47,10 @@ class RemotePath(MPTTModel):
             d['children'] = False
 
         d['icon'] = ICON_DICT.get(ext, 'fas fa-folder')
-        # if self.is_available:
-        #     d['icon'] += ' available'
-        # else:
-        #     d['icon'] += ' unavailable'
+        if self.is_available:
+            d['icon'] += ' available'
+        else:
+            d['icon'] += ' unavailable'
         if 'folder' not in d['icon'] and 'server' not in d['icon']:
             if self.is_imported:
                 d['icon'] += ' imported'

@@ -28,7 +28,7 @@ def sync_ajax(request):
         if 'lazy' in request_path:
             result = node.sync(lazy=True)
         else:
-            result = node.sync()
+            result = node.sync(lazy=False)
         if result:
             return HttpResponse(node.id)
         return HttpResponse('Failure')
@@ -42,49 +42,30 @@ def sync_remote_location(request, pk: int):
     return redirect('locations')
 
 
-def generate_json(request):
-    if request.method == 'GET':
-        pk = parse_lazy_pk(request)
-        if pk:
-            node = get_object_or_404(RemotePath, pk=pk)
-            if 'lazy' in request.get_full_path():
-                print(f'Generating lazy json for {pk}...', end='\t')
-                data = [
-                    child.to_dict(lazy=True) for child in node.children.all()
-                ]
-                print('done!')
-            else:
-                print(f'Generating full json for {pk}...', end='\t')
-                data = node.to_dict(lazy=False)
-                print('done!')
-        else:
-            print('Generating root dictionaries...', end='\t')
-            data = get_root_dicts()
-            print('done!')
-        return JsonResponse(data, safe=False)
-    else:
-        return HttpResponse('Request method must be GET!')
-    # smb = get_object_or_404(RemoteLocation, pk=pk)
-    # data = smb.tree_root.to_dict(lazy=False)
-    # return JsonResponse(data)
-
-
-def generate_lazy_json(request):
-    pk = parse_lazy_pk(request)
-    if pk:
-        node = get_object_or_404(RemotePath, pk=pk)
-        data = [child.to_dict() for child in node.children.all()]
-    else:
-        data = get_root_dicts()
-    return JsonResponse(data, safe=False)
-
-
 def parse_lazy_pk(request) -> int:
     value = request.get_full_path().split('=')[-1]
     try:
         return int(value)
     except ValueError:
         return 0
+
+
+def generate_json(request):
+    if request.method == 'GET':
+        pk = parse_lazy_pk(request)
+        if pk:
+            node = get_object_or_404(RemotePath, pk=pk)
+            if 'lazy' in request.get_full_path():
+                data = [
+                    child.to_dict(lazy=True) for child in node.children.all()
+                ]
+            else:
+                data = node.to_dict(lazy=False)
+        else:
+            data = get_root_dicts()
+        return JsonResponse(data, safe=False)
+    else:
+        return HttpResponse('Request method must be GET!')
 
 
 class RemoteLocationListView(LoginRequiredMixin, ListView):

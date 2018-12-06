@@ -21,6 +21,11 @@ setup(
     author='Zvi Baratz',
     author_email='z.baratz@gmail.com',
     keywords='django smb windows share remote',
+    install_requires=['pysmb'],
+    extras_require={
+        'dev': ['flake8', 'yapf'],
+        'test': ['pytest']
+    },
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
