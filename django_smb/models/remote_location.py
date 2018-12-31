@@ -2,7 +2,7 @@ import os
 import socket
 
 from datetime import datetime
-from django.db import models, transaction
+from django.db import models
 from django.urls import reverse
 from smb.SMBConnection import SMBConnection
 from django_smb.models import RemotePath
@@ -63,33 +63,31 @@ class RemoteLocation(models.Model):
             connection.close()
             return paths
 
-    def list_file_paths(self, path: str) -> list:
+    def list_files_recursively(self, path: str) -> list:
         files = self.list_files(path)
         result = []
         for f in files:
             full_path = os.path.join(path, f.filename)
             if f.isDirectory:
-                result += self.list_file_paths(full_path)
+                result += self.list_files_recursively(full_path)
             else:
                 result += [full_path]
         return result
 
     def list_all_paths(self) -> list:
-        return self.list_file_paths('.')
+        return self.list_files_recursively('.')
 
     def create_tree_root(self):
-        new_root = RemotePath(name='.')
+        new_root = RemotePath.add_root(name='.')
         new_root.save()
         self.tree_root = new_root
         self.save()
+        return self.tree_root
 
     def sync(self):
         if self.tree_root is None:
             self.create_tree_root()
-        with transaction.atomic():
-            with RemotePath.objects.disable_mptt_updates():
-                self.tree_root.sync()
-            RemotePath.objects.rebuild()
+        self.tree_root.sync()
         self.last_sync = datetime.now()
         self.save()
 

@@ -57,7 +57,8 @@ def generate_json(request):
             node = get_object_or_404(RemotePath, pk=pk)
             if 'lazy' in request.get_full_path():
                 data = [
-                    child.to_dict(lazy=True) for child in node.children.all()
+                    child.to_dict(lazy=True)
+                    for child in node.get_children().all()
                 ]
             else:
                 data = node.to_dict(lazy=False)
