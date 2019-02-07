@@ -9,6 +9,7 @@ from django.views.generic import ListView
 from django.views.generic.edit import CreateView
 from django_smb.forms import RemoteLocationForm
 from django_smb.models import RemoteLocation, RemotePath
+from .tasks import sync_location
 
 
 def get_root_dicts():

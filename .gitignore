@@ -40,3 +40,4 @@ htmlcov
 # Other
 *.pem
 **.zip
+venv

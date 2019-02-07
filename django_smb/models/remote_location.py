@@ -14,12 +14,13 @@ class RemoteLocation(models.Model):
     password = models.CharField(max_length=64, blank=False)
     share_name = models.CharField(max_length=64, blank=False)
     server_name = models.CharField(max_length=64, blank=False, unique=True)
-    last_sync = models.DateTimeField(null=True)
+    last_sync = models.DateTimeField(null=True, blank=True)
 
     tree_root = models.OneToOneField(
         RemotePath,
         on_delete=models.CASCADE,
         null=True,
+        blank=True,
         related_name='root_for',
     )
 
@@ -84,12 +85,13 @@ class RemoteLocation(models.Model):
         self.save()
         return self.tree_root
 
-    def sync(self):
+    def sync(self) -> bool:
         if self.tree_root is None:
             self.create_tree_root()
         self.tree_root.sync()
         self.last_sync = datetime.now()
         self.save()
+        return True
 
     @property
     def is_connected(self):
